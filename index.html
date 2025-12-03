@@ -176,4 +176,80 @@ function calculateGroup(list, groupName) {
 
         // 計算多餘花瓣
         if (f.color) {
-            const extra = Math.max(petalHave
+            const extra = Math.max(petalHave - petalNeed, 0);
+            extraPetals += extra;
+        }
+    });
+
+    // 第二輪：處理無色花花瓣加總
+    const lastIndex = list.length - 1;
+    const pure = list[lastIndex];
+
+    const remainPure = Number(document.getElementById(`${groupName}-remain-${lastIndex}`).innerText);
+    const needPetalPure = Math.ceil(remainPure / 15);
+
+    document.getElementById(`${groupName}-petalHave-${lastIndex}`).innerText = extraPetals;
+
+    const remainPetalPure = Math.max(needPetalPure - extraPetals, 0);
+    document.getElementById(`${groupName}-petalRemain-${lastIndex}`).innerText = remainPetalPure;
+
+    // 檢查系列完成
+    if (remainPure === 0 && remainPetalPure === 0) {
+        // 整系列完成
+        const section = document.getElementById(groupName + "-rows");
+        section.innerHTML = `<div class="series-completed">${list[0].name.replace("白色","").replace(" ","")}系列－完成！</div>`;
+    } else {
+        // 沒完成 → 更新完成狀態顯示
+        list.forEach((f, i)=>{
+            const remain = Number(document.getElementById(`${groupName}-remain-${i}`).innerText);
+            const row = document.getElementById(`${groupName}-row-${i}`);
+            const title = document.getElementById(`${groupName}-title-${i}`);
+            const inputArea = document.getElementById(`${groupName}-inputs-${i}`);
+
+            if (remain === 0) {
+                row.classList.add("completed");
+                title.innerText = `${f.name}－完成！`;
+            } else {
+                row.classList.remove("completed");
+                title.innerText = f.name;
+            }
+        });
+    }
+}
+
+/*=====================
+  事件綁定＆初始化
+=====================*/
+
+function bindEvents(list, groupName) {
+    list.forEach((f, i)=>{
+        const ids = [
+            `${groupName}-planted-${i}`,
+            `${groupName}-petalHave-${i}`
+        ];
+
+        ids.forEach(id=>{
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener("input", ()=>calculateGroup(list, groupName));
+            }
+        });
+    });
+}
+
+createRows(primrose, "primrose-rows", "primrose");
+createRows(poinsettia, "poinsettia-rows", "poinsettia");
+
+loadFromLocalStorage(primrose, "primrose");
+loadFromLocalStorage(poinsettia, "poinsettia");
+
+bindEvents(primrose, "primrose");
+bindEvents(poinsettia, "poinsettia");
+
+calculateGroup(primrose, "primrose");
+calculateGroup(poinsettia, "poinsettia");
+
+</script>
+
+</body>
+</html>
