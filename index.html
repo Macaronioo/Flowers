@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>花瓣計算器</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    padding: 10px;
+    background: #fafafa;
+}
+.group-title {
+    font-size: 20px;
+    margin-top: 20px;
+    font-weight: bold;
+}
+.flower-row {
+    background: white;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+.completed {
+    background: #e0ffe0;
+}
+.row-top {
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+.input-box {
+    width: 70px;
+}
+.small-label {
+    font-size: 14px;
+    opacity: 0.7;
+}
+.hidden {
+    display: none;
+}
+.series-completed {
+    font-size: 20px;
+    color: green;
+    font-weight: bold;
+    margin-top: 15px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🌸 花瓣計算器</h2>
+
+<!-- ================= 櫻草花系列 ================= -->
+<div id="primrose-section">
+    <div class="group-title">櫻草花系列</div>
+    <div id="primrose-rows"></div>
+</div>
+
+<!-- ================= 聖誕紅系列 ================= -->
+<div id="poinsettia-section">
+    <div class="group-title">聖誕紅系列</div>
+    <div id="poinsettia-rows"></div>
+</div>
+
+<script>
+/*=====================
+     資料設定
+=====================*/
+
+const primrose = [
+    {name:"白色櫻草花", need:2000, color:true},
+    {name:"黃色櫻草花", need:2000, color:true},
+    {name:"藍色櫻草花", need:2000, color:true},
+    {name:"紅色櫻草花", need:2000, color:true},
+    {name:"櫻草花", need:500, color:false}
+];
+
+const poinsettia = [
+    {name:"白色聖誕紅", need:1500, color:true},
+    {name:"紅色聖誕紅", need:1500, color:true},
+    {name:"黃色聖誕紅", need:1500, color:true},
+    {name:"藍色聖誕紅", need:1000, color:true},
+    {name:"聖誕紅", need:2500, color:false}
+];
+
+/*=====================
+     建立介面
+=====================*/
+
+function createRows(list, targetID, groupName) {
+    const container = document.getElementById(targetID);
+    container.innerHTML = "";
+
+    list.forEach((f, index)=>{
+        const row = document.createElement("div");
+        row.className = "flower-row";
+        row.id = groupName + "-row-" + index;
+
+        row.innerHTML = `
+            <div class="row-top" id="${groupName}-title-${index}">
+                ${f.name}
+            </div>
+            <div id="${groupName}-inputs-${index}">
+                需種：${f.need} ｜ 
+                已種：<input class="input-box" id="${groupName}-planted-${index}" type="number" min="0" value="0"><br>
+                尚需種：<span id="${groupName}-remain-${index}">0</span><br>
+                所需花瓣：<span id="${groupName}-petalNeed-${index}">0</span><br>
+                ${f.color ?
+                    `已有花瓣：<input class="input-box" id="${groupName}-petalHave-${index}" type="number" min="0" value="0">`
+                 :
+                    `已有花瓣(自動)：<span id="${groupName}-petalHave-${index}">0</span>`
+                }<br>
+                尚需花瓣：<span id="${groupName}-petalRemain-${index}">0</span>
+            </div>
+        `;
+        container.appendChild(row);
+    });
+}
+
+/*=====================
+       計算函式
+=====================*/
+
+function calculateGroup(list, groupName) {
+
+    let extraPetals = 0; // 有色花的多餘花瓣加總
+
+    // 第一輪：處理有色花計算
+    list.forEach((f, i)=>{
+        const need = f.need;
+        const planted = Number(document.getElementById(`${groupName}-planted-${i}`).value || 0);
+        
+        const remain = Math.max(need - planted, 0);
+        document.getElementById(`${groupName}-remain-${i}`).innerText = remain;
+
+        const petalNeed = Math.ceil(remain / 15);
+        document.getElementById(`${groupName}-petalNeed-${i}`).innerText = petalNeed;
+
+        let petalHave;
+
+        if (f.color) {
+            petalHave = Number(document.getElementById(`${groupName}-petalHave-${i}`).value || 0);
+        } else {
+            petalHave = 0; // 暫時，等全部累積完再塞值
+        }
+
+        let petalRemain = petalNeed - petalHave;
+        petalRemain = Math.max(petalRemain, 0);
+        document.getElementById(`${groupName}-petalRemain-${i}`).innerText = petalRemain;
+
+        // 計算多餘花瓣
+        if (f.color) {
+            const extra = Math.max(petalHave - petalNeed, 0);
+            extraPetals += extra;
+        }
+    });
+
+    // 第二輪：處理無色花花瓣加總
+    const lastIndex = list.length - 1;
+    const pure = list[lastIndex];
+
+    const remainPure = Number(document.getElementById(`${groupName}-remain-${lastIndex}`).innerText);
+    const needPetalPure = Math.ceil(remainPure / 15);
+
+    document.getElementById(`${groupName}-petalHave-${lastIndex}`).innerText = extraPetals;
+
+    const remainPetalPure = Math.max(needPetalPure - extraPetals, 0);
+    document.getElementById(`${groupName}-petalRemain-${lastIndex}`).innerText = remainPetalPure;
+
+    // 檢查系列完成
+    if (remainPure === 0 && remainPetalPure === 0) {
+        // 整系列完成
+        const section = document.getElementById(groupName + "-rows");
+        section.innerHTML = `<div class="series-completed">${list[0].name.replace("白色","").replace(" ","")}系列－完成！</div>`;
+    } else {
+        // 沒完成 → 更新完成狀態顯示
+        list.forEach((f, i)=>{
+            const remain = Number(document.getElementById(`${groupName}-remain-${i}`).innerText);
+            const row = document.getElementById(`${groupName}-row-${i}`);
+            const title = document.getElementById(`${groupName}-title-${i}`);
+            const inputArea = document.getElementById(`${groupName}-inputs-${i}`);
+
+            if (remain === 0) {
+                row.classList.add("completed");
+                title.innerText = `${f.name}－完成！`;
+            } else {
+                row.classList.remove("completed");
+                title.innerText = f.name;
+            }
+        });
+    }
+}
+
+/*=====================
+  事件綁定＆初始化
+=====================*/
+
+function bindEvents(list, groupName) {
+    list.forEach((f, i)=>{
+        const ids = [
+            `${groupName}-planted-${i}`,
+            `${groupName}-petalHave-${i}`
+        ];
+
+        ids.forEach(id=>{
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener("input", ()=>calculateGroup(list, groupName));
+            }
+        });
+    });
+}
+
+createRows(primrose, "primrose-rows", "primrose");
+createRows(poinsettia, "poinsettia-rows", "poinsettia");
+
+bindEvents(primrose, "primrose");
+bindEvents(poinsettia, "poinsettia");
+
+calculateGroup(primrose, "primrose");
+calculateGroup(poinsettia, "poinsettia");
+
+</script>
+
+</body>
+</html>
